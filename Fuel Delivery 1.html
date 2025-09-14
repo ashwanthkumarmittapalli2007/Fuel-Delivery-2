@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Drop - Fuel Delivery App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-petroleum {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        .fuel-machine {
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23000"/><rect x="50" y="50" width="300" height="200" fill="%23333" rx="10"/><circle cx="100" cy="100" r="5" fill="%23ff0"/><circle cx="120" cy="100" r="5" fill="%23f00"/><circle cx="140" cy="100" r="5" fill="%230f0"/><rect x="200" y="80" width="80" height="40" fill="%23666" rx="5"/><text x="240" y="105" text-anchor="middle" fill="%23fff" font-size="12">FUEL</text></svg>') center/cover;
+        }
+        .glow {
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
+        }
+        .heart-animation {
+            transition: all 0.3s ease;
+        }
+        .heart-animation:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="bg-petroleum min-h-screen text-white">
+    <!-- Header -->
+    <header class="bg-black/30 backdrop-blur-sm p-4 sticky top-0 z-50">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-lg">⛽</span>
+                </div>
+                <h1 class="text-2xl font-bold text-orange-400">Fuel Drop</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleSearch()" class="p-2 bg-gray-700 rounded-full hover:bg-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </button>
+                <button onclick="toggleMenu()" class="p-2 bg-gray-700 rounded-full hover:bg-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Search Bar -->
+        <div id="searchBar" class="hidden mt-4">
+            <input type="text" id="searchInput" placeholder="Search fuel stations near you..." class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400" oninput="showSearchSuggestions()">
+            <div id="searchSuggestions" class="hidden mt-2 bg-gray-800 rounded-lg overflow-hidden">
+                <div class="p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600">Shell Station - 0.5 km away</div>
+                <div class="p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600">BP Station - 1.2 km away</div>
+                <div class="p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600">Indian Oil - 2.1 km away</div>
+                <div class="p-3 hover:bg-gray-700 cursor-pointer">Reliance Petrol Pump - 3.5 km away</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Side Menu -->
+    <div id="sideMenu" class="fixed inset-y-0 left-0 w-80 bg-black/90 backdrop-blur-sm transform -translate-x-full transition-transform z-50">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-xl font-bold text-orange-400">Menu</h2>
+                <button onclick="toggleMenu()" class="text-white">✕</button>
+            </div>
+            <nav class="space-y-4">
+                <a href="#" onclick="showPage('account')" class="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700">👤 My Account</a>
+                <a href="#" onclick="showPage('orders')" class="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700">📦 My Orders</a>
+                <a href="#" onclick="showPage('wishlist')" class="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700">❤️ My Wishlist</a>
+                <a href="#" onclick="showPage('notifications')" class="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700">🔔 My Notifications</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="p-4">
+        <!-- Login/OTP Page -->
+        <div id="loginPage" class="max-w-md mx-auto mt-20">
+            <div class="bg-black/40 backdrop-blur-sm p-8 rounded-2xl glow">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-white font-bold text-3xl">⛽</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-orange-400">Welcome to Fuel Drop</h2>
+                    <p class="text-gray-300 mt-2">Enter your details to continue</p>
+                </div>
+                
+                <div id="loginForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">User Type</label>
+                        <select id="userType" class="w-full p-3 bg-gray-800 rounded-lg text-white">
+                            <option value="user">User</option>
+                            <option value="vendor">Vendor</option>
+                        </select>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-2">Email or Phone Number</label>
+                        <input type="text" id="contact" placeholder="Enter email or phone" class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400">
+                    </div>
+                    <button onclick="sendOTP()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg transition-colors">
+                        Send OTP
+                    </button>
+                </div>
+
+                <div id="otpForm" class="hidden">
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-2">Enter OTP</label>
+                        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6" class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400 text-center text-2xl tracking-widest">
+                    </div>
+                    <button onclick="verifyOTP()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-colors">
+                        Verify OTP
+                    </button>
+                    <button onclick="backToLogin()" class="w-full mt-3 text-orange-400 hover:text-orange-300">
+                        Back to Login
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div id="mainApp" class="hidden">
+            <!-- Fuel Type Tabs -->
+            <div class="flex space-x-4 mb-6">
+                <button onclick="showFuelType('petrol')" id="petrolTab" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-colors">
+                    ⛽ PETROL
+                </button>
+                <button onclick="showFuelType('diesel')" id="dieselTab" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-lg transition-colors">
+                    🚛 DIESEL
+                </button>
+                <button onclick="showFuelType('gas')" id="gasTab" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors">
+                    🔥 GAS
+                </button>
+            </div>
+
+            <!-- Fuel Stations Near Me -->
+            <div class="bg-black/40 backdrop-blur-sm p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold mb-3">🗺️ Fuel Stations Near Me</h3>
+                <div class="space-y-2">
+                    <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                        <span>Shell Station - 0.5 km</span>
+                        <span class="text-green-400">Open</span>
+                    </div>
+                    <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                        <span>BP Station - 1.2 km</span>
+                        <span class="text-green-400">Open</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Petrol Page -->
+            <div id="petrolPage" class="fuel-page">
+                <div class="bg-black/40 backdrop-blur-sm p-6 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-red-400">Premium Petrol</h2>
+                        <button onclick="toggleWishlist('petrol')" id="petrolHeart" class="heart-animation text-2xl">🤍</button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <div class="w-full h-48 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-6xl">⛽</span>
+                        </div>
+                        <p class="text-gray-300">High-quality premium petrol for your vehicle</p>
+                        <p class="text-2xl font-bold text-orange-400 mt-2">₹95.50 per liter</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-2">Quantity (Liters)</label>
+                        <input type="number" id="petrolQuantity" value="10" min="1" max="100" class="w-24 p-2 bg-gray-800 rounded text-center text-white">
+                        <span class="ml-2 text-gray-400">Liters</span>
+                    </div>
+
+                    <div class="flex space-x-4 mb-6">
+                        <button onclick="addToCart('petrol')" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg">
+                            Add to Cart
+                        </button>
+                        <button onclick="orderNow('petrol')" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg">
+                            Order Now
+                        </button>
+                    </div>
+
+                    <!-- Comments and Rating -->
+                    <div class="border-t border-gray-700 pt-4">
+                        <h3 class="font-bold mb-3">Rating & Comments</h3>
+                        <div class="mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="mr-2">Rating:</span>
+                                <div class="flex space-x-1" id="petrolStars">
+                                    <button onclick="setRating('petrol', 1)" class="text-2xl text-yellow-400">☆</button>
+                                    <button onclick="setRating('petrol', 2)" class="text-2xl text-yellow-400">☆</button>
+                                    <button onclick="setRating('petrol', 3)" class="text-2xl text-yellow-400">☆</button>
+                                    <button onclick="setRating('petrol', 4)" class="text-2xl text-yellow-400">☆</button>
+                                    <button onclick="setRating('petrol', 5)" class="text-2xl text-yellow-400">☆</button>
+                                </div>
+                            </div>
+                            <textarea id="petrolComment" placeholder="Share your experience..." class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400 h-20"></textarea>
+                            <button onclick="submitReview('petrol')" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                                Submit Review
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diesel Page -->
+            <div id="dieselPage" class="fuel-page hidden">
+                <div class="bg-black/40 backdrop-blur-sm p-6 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-yellow-400">Premium Diesel</h2>
+                        <button onclick="toggleWishlist('diesel')" id="dieselHeart" class="heart-animation text-2xl">🤍</button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <div class="w-full h-48 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-6xl">🚛</span>
+                        </div>
+                        <p class="text-gray-300">High-quality diesel fuel for trucks and heavy vehicles</p>
+                        <p class="text-2xl font-bold text-orange-400 mt-2">₹87.20 per liter</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-2">Quantity (Liters)</label>
+                        <input type="number" id="dieselQuantity" value="20" min="1" max="200" class="w-24 p-2 bg-gray-800 rounded text-center text-white">
+                        <span class="ml-2 text-gray-400">Liters</span>
+                    </div>
+
+                    <div class="flex space-x-4 mb-6">
+                        <button onclick="addToCart('diesel')" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg">
+                            Add to Cart
+                        </button>
+                        <button onclick="orderNow('diesel')" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg">
+                            Order Now
+                        </button>
+                    </div>
+
+                    <!-- Comments and Rating -->
+                    <div class="border-t border-gray-700 pt-4">
+                        <h3 class="font-bold mb-3">Rating & Comments</h3>
+                        <div class="mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="mr-2">Rating:</span>
+                                <div class="flex space-x-1" id="dieselStars">
+                                    <button onclick="setRating('diesel', 1)" class="text-2xl text-yellow-400">☆</button>
+                                    <button onclick="setRating('diesel', 2)" class="text-2xl text-yellow-400">☆</button>
+                                    <button onclick="setRating('diesel', 3)" class="text-2xl text-yellow-400">☆</button>
+                                    <button onclick="setRating('diesel', 4)" class="text-2xl text-yellow-400">☆</button>
+                                    <button onclick="setRating('diesel', 5)" class="text-2xl text-yellow-400">☆</button>
+                                </div>
+                            </div>
+                            <textarea id="dieselComment" placeholder="Share your experience..." class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400 h-20"></textarea>
+                            <button onclick="submitReview('diesel')" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                                Submit Review
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gas Page -->
+            <div id="gasPage" class="fuel-page hidden">
+                <div class="bg-black/40 backdrop-blur-sm p-6 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-blue-400">LPG Gas</h2>
+                        <button onclick="toggleWishlist('gas')" id="gasHeart" class="heart-animation text-2xl">🤍</button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <div class="w-full h-48 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-6xl">🔥</span>
+                        </div>
+                        <p class="text-gray-300">Clean burning LPG gas for home and commercial use</p>
+                        <p class="text-2xl font-bold text-orange-400 mt-2">₹850 per cylinder</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-2">Quantity (Liters)</label>
+                        <input type="number" id="gasQuantity" value="14.2" min="1" max="100" step="0.1" class="w-24 p-2 bg-gray-800 rounded text-center text-white">
+                        <span class="ml-2 text-gray-400">Liters</span>
+                    </div>
+
+                    <div class="flex space-x-4 mb-6">
+                        <button onclick="addToCart('gas')" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg">
+                            Add to Cart
+                        </button>
+                        <button onclick="orderNow('gas')" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg">
+                            Order Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Page -->
+            <div id="orderPage" class="hidden">
+                <div class="bg-black/40 backdrop-blur-sm p-6 rounded-lg">
+                    <h2 class="text-2xl font-bold mb-6">Complete Your Order</h2>
+                    
+                    <div class="mb-6">
+                        <h3 class="font-bold mb-3">Order Summary</h3>
+                        <div id="orderSummary" class="bg-gray-800 p-4 rounded-lg mb-4">
+                            <!-- Order details will be populated here -->
+                        </div>
+                        <div class="text-lg font-bold text-orange-400" id="deliveryFeeDisplay">
+                            Delivery Fee: ₹10
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-bold mb-3">Payment Method</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="payment" value="online" class="mr-2">
+                                <span>Online Payment</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="payment" value="cod" class="mr-2" checked>
+                                <span>Cash on Delivery</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-bold mb-3">Delivery Address</h3>
+                        <textarea id="deliveryAddress" placeholder="Enter your complete address..." class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400 h-24"></textarea>
+                    </div>
+
+                    <button onclick="placeOrder()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg">
+                        Place Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Delivery Page -->
+            <div id="deliveryPage" class="hidden">
+                <div class="bg-black/40 backdrop-blur-sm p-6 rounded-lg">
+                    <h2 class="text-2xl font-bold mb-6">Delivery Tracking</h2>
+                    
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <span>Location Services</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="locationToggle" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                        
+                        <button onclick="getCurrentLocation()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg mb-4">
+                            📍 Current Location
+                        </button>
+                        
+                        <button onclick="trackFuel()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-lg">
+                            🗺️ See Where is My Fuel
+                        </button>
+                    </div>
+
+                    <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                        <h3 class="font-bold mb-2">Live Tracking Map</h3>
+                        <div class="w-full h-64 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">🗺️</div>
+                                <div class="text-white font-bold">Live Map View</div>
+                                <div class="text-sm text-gray-200">Your fuel delivery is on the way!</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <h3 class="font-bold mb-2">Delivery Status</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+                                <span>Order Confirmed</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+                                <span>Fuel Loaded</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-yellow-500 rounded-full mr-3"></div>
+                                <span>On the Way</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-gray-500 rounded-full mr-3"></div>
+                                <span>Delivered</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cart Page -->
+            <div id="cartPage" class="hidden">
+                <div class="bg-black/40 backdrop-blur-sm p-6 rounded-lg">
+                    <h2 class="text-2xl font-bold mb-6">Shopping Cart</h2>
+                    <div id="cartItems" class="space-y-4 mb-6">
+                        <div class="text-center text-gray-400 py-8">
+                            Your cart is empty
+                        </div>
+                    </div>
+                    <div id="cartTotal" class="hidden border-t border-gray-700 pt-4">
+                        <div class="flex justify-between text-lg font-bold">
+                            <span>Total:</span>
+                            <span id="totalAmount">₹0</span>
+                        </div>
+                        <button onclick="proceedToCheckout()" class="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg">
+                            Proceed to Checkout
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Page -->
+            <div id="addressPage" class="hidden">
+                <div class="bg-black/40 backdrop-blur-sm p-6 rounded-lg">
+                    <h2 class="text-2xl font-bold mb-6">Manage Address</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Full Name</label>
+                            <input type="text" id="addressName" placeholder="Enter your full name" class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Phone Number</label>
+                            <input type="tel" id="addressPhone" placeholder="Enter phone number" class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Complete Address</label>
+                            <textarea id="addressFull" placeholder="House/Flat No, Street, Area, City, State, PIN" class="w-full p-3 bg-gray-800 rounded-lg text-white placeholder-gray-400 h-24"></textarea>
+                        </div>
+                        <button onclick="saveAddress()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg">
+                            Save Address
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wishlist Page -->
+            <div id="wishlistPage" class="hidden">
+                <div class="bg-black/40 backdrop-blur-sm p-6 rounded-lg">
+                    <h2 class="text-2xl font-bold mb-6">My Wishlist</h2>
+                    <div id="wishlistItems" class="space-y-4">
+                        <div class="text-center text-gray-400 py-8">
+                            Your wishlist is empty
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottomNav" class="hidden fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm p-4">
+        <div class="flex justify-around">
+            <button onclick="showBottomPage('home')" class="flex flex-col items-center text-orange-400">
+                <span class="text-2xl">🏠</span>
+                <span class="text-xs">Home</span>
+            </button>
+            <button onclick="showBottomPage('address')" class="flex flex-col items-center text-white">
+                <span class="text-2xl">📍</span>
+                <span class="text-xs">Address</span>
+            </button>
+            <button onclick="showBottomPage('products')" class="flex flex-col items-center text-white">
+                <span class="text-2xl">➕</span>
+                <span class="text-xs">Add Product</span>
+            </button>
+            <button onclick="showBottomPage('cart')" class="flex flex-col items-center text-white">
+                <span class="text-2xl">🛒</span>
+                <span class="text-xs">Cart</span>
+            </button>
+            <button onclick="showBottomPage('delivery')" class="flex flex-col items-center text-white">
+                <span class="text-2xl">🚚</span>
+                <span class="text-xs">Delivery</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        let currentUser = null;
+        let cart = [];
+        let wishlist = [];
+        let currentRatings = {};
+
+        // Authentication Functions
+        function sendOTP() {
+            const contact = document.getElementById('contact').value;
+            const userType = document.getElementById('userType').value;
+            
+            if (!contact) {
+                alert('Please enter email or phone number');
+                return;
+            }
+            
+            // Simulate OTP sending
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('otpForm').classList.remove('hidden');
+            alert('OTP sent to ' + contact);
+        }
+
+        function verifyOTP() {
+            const otp = document.getElementById('otpInput').value;
+            
+            if (otp.length !== 6) {
+                alert('Please enter 6-digit OTP');
+                return;
+            }
+            
+            // Simulate OTP verification
+            currentUser = {
+                contact: document.getElementById('contact').value,
+                type: document.getElementById('userType').value
+            };
+            
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('bottomNav').classList.remove('hidden');
+            
+            alert('Login successful!');
+        }
+
+        function backToLogin() {
+            document.getElementById('otpForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+
+        // Navigation Functions
+        function toggleMenu() {
+            const menu = document.getElementById('sideMenu');
+            menu.classList.toggle('-translate-x-full');
+        }
+
+        function toggleSearch() {
+            const searchBar = document.getElementById('searchBar');
+            searchBar.classList.toggle('hidden');
+        }
+
+        function showFuelType(type) {
+            // Hide all fuel pages
+            document.querySelectorAll('.fuel-page').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // Show selected fuel page
+            document.getElementById(type + 'Page').classList.remove('hidden');
+            
+            // Update tab styles
+            document.querySelectorAll('[id$="Tab"]').forEach(tab => {
+                tab.classList.remove('ring-2', 'ring-orange-400');
+            });
+            document.getElementById(type + 'Tab').classList.add('ring-2', 'ring-orange-400');
+        }
+
+        function showBottomPage(page) {
+            // Hide all pages
+            document.querySelectorAll('#mainApp > div').forEach(div => {
+                if (div.id !== 'bottomNav') {
+                    div.classList.add('hidden');
+                }
+            });
+            
+            // Show selected page
+            if (page === 'home') {
+                document.querySelectorAll('.fuel-page').forEach(p => p.classList.add('hidden'));
+                document.getElementById('petrolPage').classList.remove('hidden');
+                document.querySelector('[class*="flex space-x-4 mb-6"]').classList.remove('hidden');
+                document.querySelector('[class*="bg-black/40 backdrop-blur-sm p-4 rounded-lg mb-6"]').classList.remove('hidden');
+            } else if (page === 'cart') {
+                document.getElementById('cartPage').classList.remove('hidden');
+            } else if (page === 'delivery') {
+                document.getElementById('deliveryPage').classList.remove('hidden');
+            } else if (page === 'address') {
+                document.getElementById('addressPage').classList.remove('hidden');
+            } else if (page === 'products') {
+                alert('Add product feature for vendors coming soon!');
+            }
+            
+            // Update bottom nav styles
+            document.querySelectorAll('#bottomNav button').forEach(btn => {
+                btn.classList.remove('text-orange-400');
+                btn.classList.add('text-white');
+            });
+            event.target.closest('button').classList.remove('text-white');
+            event.target.closest('button').classList.add('text-orange-400');
+        }
+
+        function showPage(page) {
+            // Hide all pages
+            document.querySelectorAll('#mainApp > div').forEach(div => {
+                div.classList.add('hidden');
+            });
+            
+            if (page === 'wishlist') {
+                document.getElementById('wishlistPage').classList.remove('hidden');
+                updateWishlistDisplay();
+            } else {
+                alert(page.charAt(0).toUpperCase() + page.slice(1) + ' page coming soon!');
+            }
+            
+            toggleMenu();
+        }
+
+        // Fuel Functions
+        function addToCart(fuelType) {
+            const quantity = document.getElementById(fuelType + 'Quantity').value;
+            const prices = { petrol: 95.50, diesel: 87.20, gas: 60 }; // Gas price per liter
+            const deliveryFees = { petrol: 10, diesel: 20, gas: 10 };
+            
+            const item = {
+                id: Date.now(),
+                type: fuelType,
+                quantity: parseFloat(quantity),
+                price: prices[fuelType],
+                total: parseFloat(quantity) * prices[fuelType],
+                deliveryFee: deliveryFees[fuelType]
+            };
+            
+            cart.push(item);
+            alert(`${quantity} liters of ${fuelType} added to cart!`);
+            updateCartDisplay();
+        }
+
+        function orderNow(fuelType) {
+            addToCart(fuelType);
+            showOrderPage();
+        }
+
+        function showOrderPage() {
+            document.querySelectorAll('#mainApp > div').forEach(div => {
+                div.classList.add('hidden');
+            });
+            document.getElementById('orderPage').classList.remove('hidden');
+            updateOrderSummary();
+        }
+
+        function updateOrderSummary() {
+            const summary = document.getElementById('orderSummary');
+            const deliveryFeeDisplay = document.getElementById('deliveryFeeDisplay');
+            let html = '';
+            let total = 0;
+            let deliveryFee = 0;
+            
+            cart.forEach(item => {
+                html += `
+                    <div class="flex justify-between items-center mb-2">
+                        <span>${item.type.toUpperCase()} - ${item.quantity} liters</span>
+                        <span>₹${item.total}</span>
+                    </div>
+                `;
+                total += item.total;
+                deliveryFee = Math.max(deliveryFee, item.deliveryFee); // Use highest delivery fee
+            });
+            
+            html += `
+                <div class="border-t border-gray-600 pt-2 mt-2">
+                    <div class="flex justify-between font-bold">
+                        <span>Subtotal:</span>
+                        <span>₹${total}</span>
+                    </div>
+                </div>
+            `;
+            
+            summary.innerHTML = html;
+            deliveryFeeDisplay.textContent = `Delivery Fee: ₹${deliveryFee}`;
+        }
+
+        function placeOrder() {
+            const address = document.getElementById('deliveryAddress').value;
+            const payment = document.querySelector('input[name="payment"]:checked').value;
+            
+            if (!address) {
+                alert('Please enter delivery address');
+                return;
+            }
+            
+            alert(`Order placed successfully! Payment method: ${payment}. Delivery will arrive within 30 minutes.`);
+            cart = [];
+            updateCartDisplay();
+            showBottomPage('delivery');
+        }
+
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<div class="text-center text-gray-400 py-8">Your cart is empty</div>';
+                cartTotal.classList.add('hidden');
+                return;
+            }
+            
+            let html = '';
+            let total = 0;
+            
+            cart.forEach((item, index) => {
+                html += `
+                    <div class="bg-gray-800 p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold">${item.type.toUpperCase()}</h3>
+                            <p class="text-gray-400">${item.quantity} ${item.type === 'gas' ? 'cylinders' : 'liters'} × ₹${item.price}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold">₹${item.total}</p>
+                            <button onclick="removeFromCart(${index})" class="text-red-400 text-sm">Remove</button>
+                        </div>
+                    </div>
+                `;
+                total += item.total;
+            });
+            
+            cartItems.innerHTML = html;
+            document.getElementById('totalAmount').textContent = '₹' + total;
+            cartTotal.classList.remove('hidden');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartDisplay();
+        }
+
+        function proceedToCheckout() {
+            showOrderPage();
+        }
+
+        // Wishlist Functions
+        function toggleWishlist(fuelType) {
+            const heartBtn = document.getElementById(fuelType + 'Heart');
+            
+            if (wishlist.includes(fuelType)) {
+                wishlist = wishlist.filter(item => item !== fuelType);
+                heartBtn.textContent = '🤍';
+            } else {
+                wishlist.push(fuelType);
+                heartBtn.textContent = '❤️';
+            }
+        }
+
+        function updateWishlistDisplay() {
+            const wishlistItems = document.getElementById('wishlistItems');
+            
+            if (wishlist.length === 0) {
+                wishlistItems.innerHTML = '<div class="text-center text-gray-400 py-8">Your wishlist is empty</div>';
+                return;
+            }
+            
+            let html = '';
+            const fuelData = {
+                petrol: { name: 'Premium Petrol', price: '₹95.50/L', icon: '⛽' },
+                diesel: { name: 'Premium Diesel', price: '₹87.20/L', icon: '🚛' },
+                gas: { name: 'LPG Gas', price: '₹850/cylinder', icon: '🔥' }
+            };
+            
+            wishlist.forEach(fuel => {
+                const data = fuelData[fuel];
+                html += `
+                    <div class="bg-gray-800 p-4 rounded-lg flex justify-between items-center">
+                        <div class="flex items-center">
+                            <span class="text-3xl mr-4">${data.icon}</span>
+                            <div>
+                                <h3 class="font-bold">${data.name}</h3>
+                                <p class="text-gray-400">${data.price}</p>
+                            </div>
+                        </div>
+                        <button onclick="toggleWishlist('${fuel}')" class="text-red-400 text-2xl">❤️</button>
+                    </div>
+                `;
+            });
+            
+            wishlistItems.innerHTML = html;
+        }
+
+        // Search Functions
+        function showSearchSuggestions() {
+            const input = document.getElementById('searchInput');
+            const suggestions = document.getElementById('searchSuggestions');
+            
+            if (input.value.length > 0) {
+                suggestions.classList.remove('hidden');
+            } else {
+                suggestions.classList.add('hidden');
+            }
+        }
+
+        // Rating and Review Functions
+        function setRating(fuelType, rating) {
+            currentRatings[fuelType] = rating;
+            
+            // Update star display
+            const starsContainer = document.getElementById(fuelType + 'Stars');
+            const stars = starsContainer.querySelectorAll('button');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.textContent = '★';
+                    star.classList.remove('text-yellow-400');
+                    star.classList.add('text-white');
+                } else {
+                    star.textContent = '☆';
+                    star.classList.remove('text-white');
+                    star.classList.add('text-yellow-400');
+                }
+            });
+        }
+
+        function submitReview(fuelType) {
+            const comment = document.getElementById(fuelType + 'Comment').value;
+            const rating = currentRatings[fuelType] || 0;
+            
+            if (rating === 0) {
+                alert('Please select a rating');
+                return;
+            }
+            
+            alert(`Thank you for your ${rating}-star review!`);
+            document.getElementById(fuelType + 'Comment').value = '';
+        }
+
+        // Location Functions
+        function getCurrentLocation() {
+            alert('Getting your current location...');
+            // Simulate location detection
+            setTimeout(() => {
+                alert('Location detected: 123 Main Street, City');
+            }, 1000);
+        }
+
+        function trackFuel() {
+            alert('Opening live tracking map...');
+        }
+
+        // Address Functions
+        function saveAddress() {
+            const name = document.getElementById('addressName').value;
+            const phone = document.getElementById('addressPhone').value;
+            const address = document.getElementById('addressFull').value;
+            
+            if (!name || !phone || !address) {
+                alert('Please fill all address fields');
+                return;
+            }
+            
+            alert('Address saved successfully!');
+            // Clear form
+            document.getElementById('addressName').value = '';
+            document.getElementById('addressPhone').value = '';
+            document.getElementById('addressFull').value = '';
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default fuel type
+            showFuelType('petrol');
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f00722923d1f0a',t:'MTc1Nzg1NDQxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
